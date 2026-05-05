@@ -1,6 +1,12 @@
 # KYC Fraud Detection Pipeline
 
-This project implements a layered fraud detection pipeline for KYC submissions.
+A production-style KYC fraud detection project with a clean React + Tailwind frontend and an unchanged FastAPI backend.
+
+## Project Overview
+
+- Backend: FastAPI app under `app/`.
+- Frontend: Root-level Vite + React + Tailwind app under `src/`.
+- No backend changes were made as requested.
 
 ## Implemented Layers
 
@@ -14,24 +20,58 @@ This project implements a layered fraud detection pipeline for KYC submissions.
 
 ## Decision Outcomes
 
-- auto_approve
-- step_up_verification
-- manual_review
-- auto_reject
+- `auto_approve`
+- `step_up_verification`
+- `manual_review`
+- `auto_reject`
+
+## Frontend Details
+
+The frontend includes:
+
+- Home dashboard with product summary and deployment hints.
+- Submit page with a structured KYC form, sample payload loader, request preview, and result display.
+- Docs page showing API contract and payload examples.
+- About page explaining decision outcomes and workflow.
+
+UI files:
+
+- `src/App.jsx`
+- `src/main.jsx`
+- `src/index.css`
+- `src/data/samplePayload.js`
 
 ## Run
 
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
+### Backend
+From the project root:
+
+```powershell
+cd "D:\Esewa Hackothon\KYC_Fraud_Detection"
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-uvicorn app.main:app --reload
+uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
+
+### Frontend
+From the project root:
+
+```bash
+npm install
+npm run dev
+```
+
+Open the browser at:
+
+- `http://localhost:5173`
+
+Then use the **Submit** page to send requests to the backend.
 
 ## API
 
-- `GET /health`
-- `POST /kyc/submit`
+- `GET /health` — backend health check
+- `POST /kyc/submit` — submit a KYC payload and receive a decision
 
 Example request payload:
 
@@ -93,11 +133,11 @@ Example request payload:
 ## Tests
 
 ```bash
-python3 -m unittest discover -s tests -p "test_*.py"
+python -m unittest discover -s tests -p "test_*.py"
 ```
 
 ## Notes
 
-- Hard-fail rules force auto-reject.
-- All layers emit normalized explainable signals.
-- Risk is fused from tabular and biometric components.
+- The frontend is a polished React + Tailwind app.
+- The backend remains unchanged.
+- `npm install` and `npm run dev` should be run from the root directory.
