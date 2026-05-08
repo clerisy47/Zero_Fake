@@ -5,7 +5,7 @@ const API = 'http://127.0.0.1:8000';
 // ─── Utilities ────────────────────────────────────────────────────────────────
 
 function generateId() {
-  return 'KYC-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase();
+  return 'ZF-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase();
 }
 
 function getAge(dob) {
@@ -346,8 +346,8 @@ export default function App() {
       <nav className="nav">
         <div className="nav__inner">
           <button type="button" className="nav__brand" onClick={() => goPage('home')}>
-            <div className="nav__logo">GG</div>
-            <span className="nav__name">GuardGate</span>
+            <div className="nav__logo">ZF</div>
+            <span className="nav__name">ZeroFake</span>
           </button>
           <div className="nav__links">
             {[['home','Home'],['submit','Verify Identity'],['about','How It Works']].map(([p, l]) => (
@@ -371,7 +371,7 @@ export default function App() {
             <section className="hero">
               <div className="hero__left">
                 <div className="pill">Identity Verification Platform</div>
-                <h1 className="hero__h1">KYC fraud detection, <span className="hero__accent">layer by layer.</span></h1>
+                <h1 className="hero__h1">Zero in on fakes, <span className="hero__accent">layer by layer.</span></h1>
                 <p className="hero__body">
                   Upload your identity document and selfie. Our 7-layer AI pipeline runs document forensics,
                   biometric analysis, and behavioral screening — returning an instant risk decision.
@@ -669,7 +669,7 @@ export default function App() {
         {page === 'about' && (
           <div className="about">
             <div className="about__head">
-              <h2 className="about__title">How GuardGate works</h2>
+              <h2 className="about__title">How ZeroFake works</h2>
               <p className="about__sub">
                 Seven sequential layers of fraud detection, from network-level signals to biometric analysis.
               </p>

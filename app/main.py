@@ -8,7 +8,7 @@ from app.pipeline import FraudPipeline
 
 
 pipeline = FraudPipeline()
-app = FastAPI(title="KYC Fraud Detection Pipeline", version="1.0.0")
+app = FastAPI(title="ZeroFake", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,
