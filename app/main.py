@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.models import DecisionResult, HealthResponse, KycSubmission
 from app.pipeline import FraudPipeline
@@ -8,6 +9,13 @@ from app.pipeline import FraudPipeline
 
 pipeline = FraudPipeline()
 app = FastAPI(title="KYC Fraud Detection Pipeline", version="1.0.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type"],
+)
 
 
 @app.get("/health", response_model=HealthResponse)
