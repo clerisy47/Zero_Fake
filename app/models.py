@@ -44,6 +44,15 @@ class GatewayInput(BaseModel):
 
 
 class DeviceInput(BaseModel):
+    canvas_fingerprint_hash: str
+    installed_font_count: int
+    user_agent: str
+    accelerometer_variance: float
+    webgl_renderer_hash: str
+    device_id: str
+    known_recent_submission_count: int = Field(ge=0)
+    user_agent: str
+    os_family: str
     device_id: str
     known_recent_submission_count: int = Field(ge=0)
     user_agent: str
@@ -67,6 +76,22 @@ class BehaviorInput(BaseModel):
 
 
 class DocumentInput(BaseModel):
+    ocr_field_validation: float = Field(ge=0.0, le=1.0)
+    hologram_confidence: float = Field(ge=0.0, le=1.0)
+
+    def validate_fields(self):
+        # Implement validation checks
+        errors = []
+        if not re.match(r'^[A-Z0-9]+$', self.document_number):
+            errors.append("Document number does not match expected format.")
+        if self.expiry < datetime.now():
+            errors.append("Expiry date must be in the future.")
+        if abs(self.claimed_age - (datetime.now().year - int(self.dob.split('-')[0]))) > 1:
+            errors.append("DOB is inconsistent with claimed age.")
+        if not fuzzy_match(self.full_name, self.ocr_name):
+            errors.append("Name does not match OCR name.")
+        self.ocr_field_validation = max(0, 1 - len(errors) * 0.25)
+        return errors
     document_type: str
     issuing_country: str
     document_number: str
@@ -82,6 +107,19 @@ class DocumentInput(BaseModel):
 
 
 class BiometricInput(BaseModel):
+    liveness_depth_score: float = Field(ge=0, le=1)
+    liveness_texture_score: float = Field(ge=0, le=1)
+    liveness_challenge_score: float = Field(ge=0, le=1)
+    deepfake_frequency_anomaly_score: float = Field(ge=0, le=1)
+    deepfake_boundary_score: float = Field(ge=0, le=1)
+    camera_injection_detected: bool
+    estimated_age: int = Field(ge=0, le=120)
+
+    def compute_composite_liveness(self):
+        return 0.4 * self.liveness_depth_score + 0.35 * self.liveness_texture_score + 0.25 * self.liveness_challenge_score
+
+    def compute_composite_deepfake(self):
+        return 0.5 * self.deepfake_frequency_anomaly_score + 0.5 * self.deepfake_boundary_score
     liveness_score: float = Field(ge=0, le=1)
     face_similarity_score: float = Field(ge=0, le=1)
     deepfake_score: float = Field(ge=0, le=1)
@@ -90,6 +128,23 @@ class BiometricInput(BaseModel):
 
 
 class KycSubmission(BaseModel):
+    submission_id: str
+    channel: str
+    claimed_country: str
+    gateway: GatewayInput
+    device: DeviceInput
+    network: NetworkInput
+    behavior: BehaviorInput
+    document: DocumentInput
+    biometric: BiometricInput
+    # Add new fields with sensible defaults
+    ocr_field_validation: float = 1.0
+    hologram_confidence: float = 1.0
+    liveness_depth_score: float = 0.0
+    liveness_texture_score: float = 0.0
+    liveness_challenge_score: float = 0.0
+    deepfake_frequency_anomaly_score: float = 0.0
+    deepfake_boundary_score: float = 0.0
     submission_id: str
     channel: str
     claimed_country: str
