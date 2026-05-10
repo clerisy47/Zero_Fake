@@ -40,10 +40,12 @@ class FeedbackCollector:
 
         return verdicts
 
-    def get_verdicts_by_decision(self, decision: Decision) -> List[AnalystVerdict]:
+    def get_verdicts_by_decision(self, decision: Decision | str) -> List[AnalystVerdict]:
         """Get all verdicts for a specific decision outcome."""
         if not self.verdicts_file.exists():
             return []
+
+        decision_value = decision.value if isinstance(decision, Decision) else str(decision)
 
         verdicts: List[AnalystVerdict] = []
         with open(self.verdicts_file, "r") as f:
@@ -52,7 +54,7 @@ class FeedbackCollector:
                     continue
                 data = json.loads(line)
                 verdict = AnalystVerdict(**data)
-                if verdict.verdict_decision == decision:
+                if verdict.verdict_decision.value == decision_value:
                     verdicts.append(verdict)
 
         return verdicts

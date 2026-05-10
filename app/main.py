@@ -9,7 +9,7 @@ from motor.motor_asyncio import AsyncDatabase
 
 from app.db.config import Database, settings
 from app.feedback import FeedbackCollector, ModelRetrainingScheduler
-from app.models import AnalystVerdict, DecisionResult, HealthResponse, KycSubmission
+from app.models import AnalystVerdict, Decision, DecisionResult, HealthResponse, KycSubmission
 from app.pipeline import FraudPipeline
 from app.security import (
     AuthenticationManager,
@@ -255,6 +255,7 @@ async def submit_kyc(
             "submission_id": submission.submission_id,
             "decision": result.decision.value,
             "risk_score": result.risk_score,
+            "category_scores": result.risk_breakdown.category_scores,
             "processing_time_ms": processing_time_ms,
             "created_at": datetime.utcnow(),
         }
@@ -339,21 +340,60 @@ async def trigger_retraining(
 ) -> dict:
     """Trigger model retraining (admin only)."""
     try:
-        X_train, y_train = retraining_scheduler.get_training_data()
-        
-        if len(X_train) < 10:
+        verdict_docs = await db.feedback_verdicts.find(
+            {
+                "verdict_decision": {
+                    "$in": [
+                        Decision.AUTO_REJECT.value,
+                        Decision.MANUAL_REVIEW.value,
+                        Decision.AUTO_APPROVE.value,
+                        Decision.STEP_UP.value,
+                    ]
+                }
+            }
+        ).to_list(None)
+
+        X_train: list[list[float]] = []
+        y_train: list[int] = []
+
+        for verdict in verdict_docs:
+            submission_id = verdict.get("submission_id")
+            if not submission_id:
+                continue
+
+            submission_doc = await db.kyc_submissions.find_one({"submission_id": submission_id})
+            if not submission_doc:
+                continue
+
+            category_scores = submission_doc.get("category_scores")
+            if not category_scores:
+                continue
+
+            features = pipeline.scorer.category_scores_to_features(category_scores)
+            decision = verdict.get("verdict_decision")
+            label = 1 if decision in {Decision.AUTO_REJECT.value, Decision.MANUAL_REVIEW.value} else 0
+
+            X_train.append(features)
+            y_train.append(label)
+
+        if len(X_train) < 30:
             return {
                 "status": "insufficient_data",
-                "message": f"Need at least 10 training samples, got {len(X_train)}",
+                "message": f"Need at least 30 labeled samples with category scores, got {len(X_train)}",
             }
+
+        model_metadata = pipeline.scorer.train_gradient_boosting(X_train, y_train)
         
         retraining_scheduler.on_retrain_complete()
         
         training_log = {
             "training_id": f"train_{datetime.utcnow().timestamp()}",
-            "model_version": "2.0.0",
+            "model_version": model_metadata.get("version", "gbm-v1"),
             "training_samples_count": len(X_train),
-            "deployed": False,
+            "deployed": model_metadata.get("deployed", "true") == "true",
+            "backend": model_metadata.get("backend", "gradient_boosting"),
+            "validation_accuracy": model_metadata.get("validation_accuracy"),
+            "validation_auc": model_metadata.get("validation_auc"),
             "created_at": datetime.utcnow(),
         }
         
@@ -362,6 +402,10 @@ async def trigger_retraining(
         return {
             "status": "retrained_successfully",
             "samples_used": len(X_train),
+            "model_backend": model_metadata.get("backend", "gradient_boosting"),
+            "validation_accuracy": model_metadata.get("validation_accuracy"),
+            "validation_auc": model_metadata.get("validation_auc"),
+            "deployed": model_metadata.get("deployed", "true") == "true",
             "retraining_timestamp": datetime.utcnow().isoformat(),
         }
     
