@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from enum import Enum
 from typing import Dict, List, Optional
 
@@ -51,11 +52,6 @@ class DeviceInput(BaseModel):
     webgl_renderer_hash: str
     device_id: str
     known_recent_submission_count: int = Field(ge=0)
-    user_agent: str
-    os_family: str
-    device_id: str
-    known_recent_submission_count: int = Field(ge=0)
-    user_agent: str
     os_family: str
 
 
@@ -76,22 +72,6 @@ class BehaviorInput(BaseModel):
 
 
 class DocumentInput(BaseModel):
-    ocr_field_validation: float = Field(ge=0.0, le=1.0)
-    hologram_confidence: float = Field(ge=0.0, le=1.0)
-
-    def validate_fields(self):
-        # Implement validation checks
-        errors = []
-        if not re.match(r'^[A-Z0-9]+$', self.document_number):
-            errors.append("Document number does not match expected format.")
-        if self.expiry < datetime.now():
-            errors.append("Expiry date must be in the future.")
-        if abs(self.claimed_age - (datetime.now().year - int(self.dob.split('-')[0]))) > 1:
-            errors.append("DOB is inconsistent with claimed age.")
-        if not fuzzy_match(self.full_name, self.ocr_name):
-            errors.append("Name does not match OCR name.")
-        self.ocr_field_validation = max(0, 1 - len(errors) * 0.25)
-        return errors
     document_type: str
     issuing_country: str
     document_number: str
@@ -99,30 +79,21 @@ class DocumentInput(BaseModel):
     dob: str
     claimed_age: int = Field(ge=0, le=120)
     expiry: str
-    ela_score: float = Field(ge=0, le=1)
-    font_match_score: float = Field(ge=0, le=1)
+    ela_score: float = Field(ge=0.0, le=1.0)
+    font_match_score: float = Field(ge=0.0, le=1.0)
     mrz_checksum_valid: bool
-    template_match_score: float = Field(ge=0, le=1)
-    image_quality_score: float = Field(ge=0, le=1)
+    template_match_score: float = Field(ge=0.0, le=1.0)
+    image_quality_score: float = Field(ge=0.0, le=1.0)
+    ocr_field_validation: float = Field(ge=0.0, le=1.0, default=1.0)
+    hologram_confidence: float = Field(ge=0.0, le=1.0, default=1.0)
+    nepal_district: Optional[str] = None
 
 
 class BiometricInput(BaseModel):
-    liveness_depth_score: float = Field(ge=0, le=1)
-    liveness_texture_score: float = Field(ge=0, le=1)
-    liveness_challenge_score: float = Field(ge=0, le=1)
-    deepfake_frequency_anomaly_score: float = Field(ge=0, le=1)
-    deepfake_boundary_score: float = Field(ge=0, le=1)
-    camera_injection_detected: bool
-    estimated_age: int = Field(ge=0, le=120)
-
-    def compute_composite_liveness(self):
-        return 0.4 * self.liveness_depth_score + 0.35 * self.liveness_texture_score + 0.25 * self.liveness_challenge_score
-
-    def compute_composite_deepfake(self):
-        return 0.5 * self.deepfake_frequency_anomaly_score + 0.5 * self.deepfake_boundary_score
-    liveness_score: float = Field(ge=0, le=1)
-    face_similarity_score: float = Field(ge=0, le=1)
-    deepfake_score: float = Field(ge=0, le=1)
+    liveness_score: float = Field(ge=0.0, le=1.0)
+    face_similarity_score: float = Field(ge=0.0, le=1.0)
+    face_embedding: List[float] = Field(default_factory=list)
+    deepfake_score: float = Field(ge=0.0, le=1.0)
     camera_injection_detected: bool
     estimated_age: int = Field(ge=0, le=120)
 
@@ -137,23 +108,7 @@ class KycSubmission(BaseModel):
     behavior: BehaviorInput
     document: DocumentInput
     biometric: BiometricInput
-    # Add new fields with sensible defaults
-    ocr_field_validation: float = 1.0
-    hologram_confidence: float = 1.0
-    liveness_depth_score: float = 0.0
-    liveness_texture_score: float = 0.0
-    liveness_challenge_score: float = 0.0
-    deepfake_frequency_anomaly_score: float = 0.0
-    deepfake_boundary_score: float = 0.0
-    submission_id: str
-    channel: str
-    claimed_country: str
-    gateway: GatewayInput
-    device: DeviceInput
-    network: NetworkInput
-    behavior: BehaviorInput
-    document: DocumentInput
-    biometric: BiometricInput
+    timestamp: Optional[datetime] = None
 
 
 class LayerResult(BaseModel):
@@ -164,18 +119,27 @@ class LayerResult(BaseModel):
 
 class RiskBreakdown(BaseModel):
     category_scores: Dict[str, float]
-    blended_score: float = Field(ge=0, le=100)
+    blended_score: float = Field(ge=0.0, le=100.0)
 
 
 class DecisionResult(BaseModel):
     submission_id: str
     decision: Decision
-    risk_score: float = Field(ge=0, le=100)
+    risk_score: float = Field(ge=0.0, le=100.0)
     hard_fail: Optional[HardFail] = None
     reason_codes: List[str]
     risk_breakdown: RiskBreakdown
     layer_results: List[LayerResult]
+    processing_time_ms: int = 0
 
 
 class HealthResponse(BaseModel):
     status: str
+
+
+class AnalystVerdict(BaseModel):
+    submission_id: str
+    verdict_decision: Decision
+    analyst_confidence: float = Field(ge=0.0, le=1.0)
+    notes: Optional[str] = None
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
