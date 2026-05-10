@@ -1,14 +1,18 @@
+# ZeroFake KYC Fraud Detection System v2.0.0
+# Advanced ML Models + Enterprise Security + MongoDB Persistence
+# Python 3.9+
+
 # Web Framework & Server
 fastapi==0.115.12
 uvicorn==0.34.2
 pydantic==2.11.4
 python-multipart==0.0.7
 
-# Database
+# Database - MongoDB Async Operations
 pymongo==4.6.1
 motor==3.3.2
 
-# Data Science & ML
+# Data Science & ML Core
 scikit-learn==1.5.2
 numpy==1.26.4
 joblib==1.4.2
@@ -19,21 +23,23 @@ torchvision==0.16.1
 # Face Recognition & Biometrics
 deepface==0.0.75
 facenet-pytorch==2.5.0
+
+# Image Processing & Liveness Detection
 opencv-python==4.8.1.78
-mediapipe==0.10.8
-
-# Document Processing & OCR
-pytesseract==0.3.10
-Pillow==10.1.0
 opencv-contrib-python==4.8.1.78
+mediapipe==0.10.8
+Pillow==10.1.0
 
-# Security
+# Document Processing & OCR (Tesseract Engine Required)
+pytesseract==0.3.10
+
+# Security - Authentication & Authorization
 PyJWT==2.8.1
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 cryptography==41.0.7
 
-# Utilities
+# Utilities & Configuration
 python-dotenv==1.0.0
 pydantic-settings==2.1.0
 typing-extensions==4.9.0
